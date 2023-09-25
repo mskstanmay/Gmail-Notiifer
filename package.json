@@ -1,0 +1,23 @@
+{
+  "name": "gmail_notifier",
+  "version": "1.0.0",
+  "description": "Used to send my mails to another platform making me not miss those mails",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "keywords": [
+    "googleapi",
+    "gmail",
+    "telegramBot"
+  ],
+  "author": "Msks Tanmay",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "google-auth-library": "^9.0.0",
+    "googleapis": "^126.0.1",
+    "node-telegram-bot-api": "^0.63.0"
+  }
+}
