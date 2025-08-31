@@ -117,9 +117,9 @@ async function checkForNewEmails() {
             ?.value || "No Subject";
 
         const from =
-          email.data.payload.headers.find((h) => h.name === "From")?.value ||
+          fullMsg.data.payload.headers.find((h) => h.name === "From")?.value ||
           "Unknown Sender";
-        const snippet = email.data.snippet || "";
+        const snippet = fullMsg.data.snippet || "";
 
         const text = `
 📬 *New Email Received!*
