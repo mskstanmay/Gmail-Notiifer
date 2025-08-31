@@ -3,7 +3,6 @@
 require("dotenv").config();
 const express = require("express");
 const TelegramBot = require("node-telegram-bot-api");
-const { getEmailBody, sendTelegramMessage } = require("./functions");
 const { google } = require("googleapis");
 const { OAuth2Client } = require("google-auth-library");
 const {
