@@ -54,7 +54,7 @@ bot.on("message", (msg) => {
 // Express routes
 // ------------------------
 
-app.use.use(express.json());
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.redirect(consentUrl);
