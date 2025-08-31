@@ -47,6 +47,11 @@ const consentUrl = oauth2Client.generateAuthUrl({
 // ------------------------
 // Express routes
 // ------------------------
+
+app.get("/", (req, res) => {
+  res.redirect(consentUrl);
+});
+
 app.get("/auth", (req, res) => {
   res.redirect(consentUrl);
 });
