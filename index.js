@@ -22,7 +22,10 @@ const {
 // Initialize services
 // ------------------------
 const app = express();
-const bot = new TelegramBot(telegramBotToken);
+const bot = new TelegramBot(telegramBotToken, {
+  polling: false,
+  webHook: { port: Number(port) },
+}); // disable polling for webhook mode
 const WEBHOOK_URL = "https://vitapmails.onrender.com/bot"; // replace with your Render URL
 
 // Tell Telegram where to send updates
@@ -61,7 +64,8 @@ app.get("/", (req, res) => {
 });
 
 app.post("/bot", (req, res) => {
-  bot.processUpdate(req.body); // process Telegram update
+  if (req.query.token !== telegramBotToken) return res.sendStatus(401);
+  bot.processUpdate(req.body);
   res.sendStatus(200);
 });
 
@@ -84,7 +88,7 @@ app.get("/callback", async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`App listening at ${oa_redirectUri}`);
+  console.log(`App listening at ${oa_redirectUri.slice(0, -9)}`);
 });
 
 // ------------------------
