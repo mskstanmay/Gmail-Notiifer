@@ -22,7 +22,11 @@ const {
 // Initialize services
 // ------------------------
 const app = express();
-const bot = new TelegramBot(telegramBotToken, { polling: true });
+const bot = new TelegramBot(telegramBotToken);
+const WEBHOOK_URL = "https://vitapmails.onrender.com/bot"; // replace with your Render URL
+
+// Tell Telegram where to send updates
+bot.setWebHook(`${WEBHOOK_URL}?token=${telegramBotToken}`);
 
 const oauth2Client = new OAuth2Client(
   oa_clientId,
@@ -41,19 +45,24 @@ const consentUrl = oauth2Client.generateAuthUrl({
 // ------------------------
 // Telegram bot events
 // ------------------------
-// bot.on("message", (msg) => {
-//   const chatId = msg.chat.id;
-// }
+bot.on("message", (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, "Hi! You'll receive Gmail updates here.");
+});
+
 // ------------------------
 // Express routes
 // ------------------------
+
+app.use.use(express.json());
 
 app.get("/", (req, res) => {
   res.redirect(consentUrl);
 });
 
-app.get("/auth", (req, res) => {
-  res.redirect(consentUrl);
+app.post("/bot", (req, res) => {
+  bot.processUpdate(req.body); // process Telegram update
+  res.sendStatus(200);
 });
 
 app.get("/callback", async (req, res) => {
