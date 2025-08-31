@@ -3,10 +3,16 @@
 require("dotenv").config();
 const express = require("express");
 const TelegramBot = require("node-telegram-bot-api");
-const { getEmailBody } = require("./functions");
+const { getEmailBody, sendTelegramMessage } = require("./functions");
 const { google } = require("googleapis");
 const { OAuth2Client } = require("google-auth-library");
-
+const {
+  getEmailBody,
+  getSnippet,
+  parseEmailHeaders,
+  sendTelegramMessage,
+} = require("./functions");
+const { isNewEmail, markEmailAsSent } = require("./emailStorage");
 const {
   port,
   myChatId,
@@ -110,21 +116,16 @@ async function checkForNewEmails() {
 
     if (messages && messages.length > 0) {
       for (const message of messages) {
+        if (!isNewEmail(message.id)) continue;
+
         const fullMsg = await gmail.users.messages.get({
           userId: "me",
           id: message.id,
           format: "full",
         });
 
-        const subject =
-          fullMsg.data.payload?.headers?.find((h) => h.name === "Subject")
-            ?.value || "No Subject";
-
-        const from =
-          fullMsg.data.payload.headers.find((h) => h.name === "From")?.value ||
-          "Unknown Sender";
-        const snippet = fullMsg.data.snippet || "";
-
+        const { subject, from } = parseEmailHeaders(fullMsg.data);
+        const snippet = getSnippet(fullMsg.data);
         const text = `
 📬 *New Email Received!*
 
@@ -136,21 +137,9 @@ ${snippet}
 
 🔗 [Open in Gmail](https://mail.google.com/mail/u/0/#inbox)
 `;
-        bot
-          .sendMessage(myChatId, text, { parse_mode: "Markdown" })
-          .then(() => console.log("Styled message sent successfully."))
-          .catch((err) => console.error("Error sending styled message:", err));
-        bot
-          .sendMessage(
-            myChatId,
-            `📧 New Mail\nSubject: ${subject}\n\nBody:\n${getEmailBody(
-              fullMsg.data
-            )}`
-          )
-          .then(() => console.log("Telegram message sent."))
-          .catch((err) =>
-            console.error("Error sending Telegram message:", err)
-          );
+
+        await sendTelegramMessage(bot, myChatId, text);
+        markEmailAsSent(message.id);
       }
     } else {
       console.log("No new emails.");
