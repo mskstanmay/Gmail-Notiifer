@@ -1,9 +1,12 @@
-// Declaring variables and destructuring to get important values
+// index.js
+
+require("dotenv").config();
 const express = require("express");
 const TelegramBot = require("node-telegram-bot-api");
 const { getEmailBody } = require("./functions");
 const { google } = require("googleapis");
 const { OAuth2Client } = require("google-auth-library");
+
 const {
   port,
   myChatId,
@@ -13,45 +16,56 @@ const {
   oa_redirectUri,
   oa_accessType,
   refreshtime,
-} = require("dotenv").config().parsed;
+} = process.env;
 
-// Declaring instances for express, telegram_bot and oauth2
+// ------------------------
+// Initialize services
+// ------------------------
 const app = express();
 const bot = new TelegramBot(telegramBotToken, { polling: true });
-const oauth2Client = new OAuth2Client({
-  clientId: oa_clientId,
-  clientSecret: oa_clientSecret,
-  redirectUri: oa_redirectUri,
-});
 
-// Create a URL for user consent
+const oauth2Client = new OAuth2Client(
+  oa_clientId,
+  oa_clientSecret,
+  oa_redirectUri
+);
+
+// ------------------------
+// OAuth consent URL
+// ------------------------
 const consentUrl = oauth2Client.generateAuthUrl({
   access_type: oa_accessType,
   scope: ["https://www.googleapis.com/auth/gmail.readonly"],
 });
 
-// Redirect the user to the Google OAuth consent page
+// ------------------------
+// Telegram bot events
+// ------------------------
+// bot.on("message", (msg) => {
+//   const chatId = msg.chat.id;
+// }
+// ------------------------
+// Express routes
+// ------------------------
 app.get("/auth", (req, res) => {
   res.redirect(consentUrl);
 });
 
-// Handle the callback with the authorization code
 app.get("/callback", async (req, res) => {
   const code = req.query.code;
+  if (!code) return res.status(400).send("Authorization code missing");
 
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
     res.send(
-      "Authentication successful. You can now monitor your Gmail account."
+      "Authentication successful. Your Gmail account is now being monitored."
     );
     console.log("Authentication Successful");
   } catch (error) {
     console.error("Authentication error:", error);
-    res
-      .status(500)
-      .send("Authentication error. Check the console for details.");
+    res.status(500).send("Authentication error. Check server logs.");
   }
 });
 
@@ -59,56 +73,48 @@ app.listen(port, () => {
   console.log(`App listening at http://localhost:${port}`);
 });
 
-// Set up the Gmail API
-const gmail = google.gmail({
-  version: "v1",
-  auth: oauth2Client,
-});
+// ------------------------
+// Gmail API setup
+// ------------------------
+const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-// Function to check for new emails
+// ------------------------
+// Function: Check for new emails
+// ------------------------
 async function checkForNewEmails() {
   try {
     const response = await gmail.users.messages.list({
       userId: "me",
-      q: "is:unread", // Modify the query as needed
+      q: "is:unread",
     });
 
     const messages = response.data.messages;
 
     if (messages && messages.length > 0) {
-      // Perform your desired actions for new emails
       for (const message of messages) {
-        const messageId = message.id;
-        const email = await gmail.users.messages.get({
+        const fullMsg = await gmail.users.messages.get({
           userId: "me",
-          id: messageId,
-          format: "full", // Get the full email content
+          id: message.id,
+          format: "full",
         });
 
-        // Send a message
+        const subjectHeader =
+          fullMsg.data.payload?.headers?.find((h) => h.name === "Subject")
+            ?.value || "No Subject";
+
         bot
           .sendMessage(
             myChatId,
-            `New Mail \nSubject | ${
-              email.data.subject || "No Subject"
-            }\nBody | ${getEmailBody(email.data)}`
+            `📧 New Mail\nSubject: ${subjectHeader}\n\nBody:\n${getEmailBody(
+              fullMsg.data
+            )}`
           )
-          .then(() => {
-            console.log("Message sent successfully.");
-          })
-          .catch((error) => {
-            console.error("Error sending message:", error);
-          });
+          .then(() => console.log("Telegram message sent."))
+          .catch((err) =>
+            console.error("Error sending Telegram message:", err)
+          );
       }
     } else {
-      /* bot.sendMessage(myChatId, `No new mails`)
-                 .then(() => {
-                     console.log('Message sent successfully.');
-                 })
-                 .catch((error) => {
-                     console.error('Error sending message:', error);
-                 });
-            */
       console.log("No new emails.");
     }
   } catch (error) {
@@ -116,4 +122,7 @@ async function checkForNewEmails() {
   }
 }
 
-setInterval(checkForNewEmails, refreshtime * 60 * 1000); // 5 minutes
+// ------------------------
+// Run the check periodically
+// ------------------------
+setInterval(checkForNewEmails, Number(refreshtime) * 60 * 1000);
