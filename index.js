@@ -103,14 +103,34 @@ async function checkForNewEmails() {
           format: "full",
         });
 
-        const subjectHeader =
+        const subject =
           fullMsg.data.payload?.headers?.find((h) => h.name === "Subject")
             ?.value || "No Subject";
 
+        const from =
+          email.data.payload.headers.find((h) => h.name === "From")?.value ||
+          "Unknown Sender";
+        const snippet = email.data.snippet || "";
+
+        const message = `
+📬 *New Email Received!*
+
+*From:* ${from}
+*Subject:* ${subject}
+
+📝 _Snippet:_
+${snippet}
+
+🔗 [Open in Gmail](https://mail.google.com/mail/u/0/#inbox)
+`;
+        bot
+          .sendMessage(myChatId, message, { parse_mode: "Markdown" })
+          .then(() => console.log("Styled message sent successfully."))
+          .catch((err) => console.error("Error sending styled message:", err));
         bot
           .sendMessage(
             myChatId,
-            `📧 New Mail\nSubject: ${subjectHeader}\n\nBody:\n${getEmailBody(
+            `📧 New Mail\nSubject: ${subject}\n\nBody:\n${getEmailBody(
               fullMsg.data
             )}`
           )
