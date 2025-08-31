@@ -29,7 +29,7 @@ const {
 const app = express();
 const bot = new TelegramBot(telegramBotToken, {
   polling: false,
-  webHook: { port: Number(port) },
+  webHook: { port: Number(Telegramport) },
 }); // disable polling for webhook mode
 const WEBHOOK_URL = "https://vitapmails.onrender.com/bot"; // replace with your Render URL
 
