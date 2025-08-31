@@ -84,7 +84,7 @@ app.get("/callback", async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`);
+  console.log(`App listening at ${oa_redirectUri}`);
 });
 
 // ------------------------
@@ -121,7 +121,7 @@ async function checkForNewEmails() {
           "Unknown Sender";
         const snippet = email.data.snippet || "";
 
-        const message = `
+        const text = `
 📬 *New Email Received!*
 
 *From:* ${from}
@@ -133,7 +133,7 @@ ${snippet}
 🔗 [Open in Gmail](https://mail.google.com/mail/u/0/#inbox)
 `;
         bot
-          .sendMessage(myChatId, message, { parse_mode: "Markdown" })
+          .sendMessage(myChatId, text, { parse_mode: "Markdown" })
           .then(() => console.log("Styled message sent successfully."))
           .catch((err) => console.error("Error sending styled message:", err));
         bot
