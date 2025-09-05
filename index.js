@@ -2,6 +2,7 @@
 
 require("dotenv").config();
 const express = require("express");
+const fs = require("fs");
 const TelegramBot = require("node-telegram-bot-api");
 const { google } = require("googleapis");
 const { OAuth2Client } = require("google-auth-library");
@@ -23,6 +24,7 @@ const {
   refreshtime,
   Telegramport,
 } = process.env;
+const TOKEN_PATH = "tokens.json";
 
 // ------------------------
 // Initialize services
@@ -44,11 +46,21 @@ const oauth2Client = new OAuth2Client(
 );
 
 // ------------------------
+// Load tokens if saved
+// ------------------------
+if (fs.existsSync(TOKEN_PATH)) {
+  const tokens = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8"));
+  oauth2Client.setCredentials(tokens);
+  console.log("Loaded saved tokens ✅");
+}
+
+// ------------------------
 // OAuth consent URL
 // ------------------------
 const consentUrl = oauth2Client.generateAuthUrl({
   access_type: oa_accessType,
   scope: ["https://www.googleapis.com/auth/gmail.readonly"],
+  prompt: "consent",
 });
 
 // ------------------------
@@ -85,6 +97,10 @@ app.get("/callback", async (req, res) => {
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
+
+    // Save tokens
+    fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
+    console.log("Tokens saved ✅");
 
     res.send(
       "Authentication successful. Your Gmail account is now being monitored."
