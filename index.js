@@ -48,10 +48,23 @@ const oauth2Client = new OAuth2Client(
 // ------------------------
 // Load tokens if saved
 // ------------------------
+let tokens;
 if (fs.existsSync(TOKEN_PATH)) {
-  const tokens = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8"));
-  oauth2Client.setCredentials(tokens);
-  console.log("Loaded saved tokens ✅");
+  try {
+    const data = fs.readFileSync(TOKEN_PATH, "utf8");
+    if (data) {
+      tokens = JSON.parse(data);
+      oauth2Client.setCredentials(tokens);
+      console.log("Loaded saved tokens ✅");
+    } else {
+      console.log("tokens.json is empty. Run auth flow again.");
+    }
+  } catch (err) {
+    console.error(
+      "Failed to parse tokens.json. Delete the file and re-authenticate.",
+      err
+    );
+  }
 }
 
 // ------------------------
